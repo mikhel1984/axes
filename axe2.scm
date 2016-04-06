@@ -198,12 +198,13 @@
    (newline)
    (get-next '()))    
 ;;;   get element   
-(define (get-next group)  ; not read from file now
+(define (get-next group)
    (display ": ")
    (let ((s (read)))
       (cond
          ((not (list? s)) (wrong-read "Must be a list" group))
 	 ((null? s) (reverse group))
+	 ((string? (car s)) (get-next (get-from-file (car s))))
 	 ((not (member (car s) '(P T R))) (wrong-read "Must begin with P, T or R" group))	    
 	 (else (get-next (cons s group))))))
 ;;;   error input  
@@ -212,6 +213,19 @@
    (newline)
    (get-next group))
    
+(define (get-from-file f)
+   (call-with-input-file f get-from-port))
+   
+(define (get-from-port p)
+   (let loop ((grp '()))
+      (let ((s (read p)))
+         (cond 
+	    ((eof-object? s) (display "Done") (newline) grp)    ; how to print file name?
+	    ((not (list? s)) ((display s) (display " not a list") (newline))) ;  break all
+	    ((null? s) (display "Done") (newline) grp)
+	    ((string? (car s)) (loop (append (get-from-file (car s)) grp)))
+            (else (loop (cons s grp)))))))
+	    
 (define (ABCD-print m)   
    (for-each 
       (lambda (x y) (display x) (print-expr y) (newline))
