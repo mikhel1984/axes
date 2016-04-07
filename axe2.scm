@@ -179,6 +179,8 @@
       ((T) (list 1 (f/ (cadr c) (get-n c)) 0 1)) 
       ((P) (list 1 0 (f- 0 (f/ 1 (cadr c))) 1))
       ((R) (list 1 0 (f- 0 (f/ (f- (get-n n) (get-n p)) (cadr c))) 1))
+      ((Q) (list 1 0 (f/ (f* 2 (get-n p)) (cadr c)) 1))
+      ((M) (cdr c))
       (else '(1 0 0 1))))
 ;;;   get value of refractiv index	
 (define (get-n lst)
@@ -205,17 +207,18 @@
          ((not (list? s)) (wrong-read "Must be a list" group))
 	 ((null? s) (reverse group))
 	 ((string? (car s)) (get-next (get-from-file (car s))))
-	 ((not (member (car s) '(P T R))) (wrong-read "Must begin with P, T or R" group))	    
+	 ((not (member (car s) '(P T R Q M))) (wrong-read "Must begin with P, T, Q, R or M" group))	  
+         ((and (eqv? (car s) 'M) (not (= (length s) 5))) (wrong-read "Matrix must contain 4 elements" group))	 
 	 (else (get-next (cons s group))))))
 ;;;   error input  
 (define (wrong-read msg group)
    (display msg)
    (newline)
    (get-next group))
-   
+;;; read elements from file   
 (define (get-from-file f)
    (call-with-input-file f get-from-port))
-   
+;;; working with file   
 (define (get-from-port p)
    (let loop ((grp '()))
       (let ((s (read p)))
@@ -225,7 +228,7 @@
 	    ((null? s) (display "Done") (newline) grp)
 	    ((string? (car s)) (loop (append (get-from-file (car s)) grp)))
             (else (loop (cons s grp)))))))
-	    
+;;; print result	    
 (define (ABCD-print m)   
    (for-each 
       (lambda (x y) (display x) (print-expr y) (newline))
