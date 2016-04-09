@@ -32,7 +32,8 @@
    (cond 
       ((and (number? a) (number? b)) (- a b))      
       ((and (number? b) (= b 0)) a)
-      ((mat-eqv? a b) 0)
+      ;((mat-eqv? a b) 0)
+      ((equal? a b) 0)
       (else (list '- a b))))
 ;;;   a / b	       
 (define (f/ a b)
@@ -41,38 +42,10 @@
       ((and (number? a) (number? b)) (/ a b))      
       ((and (number? a) (= a 0)) 0)
       ((and (number? b) (= b 1)) a)
-      ((mat-eqv? a b) 1)
+      ;((mat-eqv? a b) 1)
+      ((equal? a b) 1)
       (else (list '/ a b))))
       
-;;;======= Сравнение математических выражений =========
-;;; Выражения записываются с двумя аргументами, например
-;;; a + b + c -> (+ a (+ b c))
-;;;-----------------------------------------------------
-
-;;;  does mathematical expressions equal?
-(define (mat-eqv? a b)
-   (if (list? a)
-      (if (list? b)
-          (expr-eqv? a b)
-	  #f)
-      (eqv? a b))) 
-;;;   expr1 == expr2	       
-(define (expr-eqv? e1 e2)
-   (if (eqv? (car e1) (car e2))     
-      (if (direct-eqv? (cdr e1) (cdr e2))
-         #t
-	 (and (member (car e1) '(+ *))
-	          (reverse-eqv? (cdr e1) (cdr e2))))
-      #f))
-;;;   (a b) == (a b)       
-(define (direct-eqv? a b)
-   (and (mat-eqv? (car a) (car b))
-            (mat-eqv? (cadr a) (cadr b))))
-;;;   (a b) == (b a)     
-(define (reverse-eqv? a b)
-   (and (mat-eqv? (car a) (cadr b))
-            (mat-eqv? (car b) (cadr a))))
-
 ;;;==================== Матрицы =====================
 ;;; Матрицы 2x2, записываются по строкам:
 ;;; (a b c d) -> (a b
@@ -209,9 +182,9 @@
       
 ;;;=============== Диалог ===============
 
-;;;   dialog, expect (T ...) or (R ...) or (P ...), () to stop   
+;;;   dialog, expect (T ...) or (R ...) or (P ...) or (Q ...) or (M ...), () to stop   
 (define (get-scheme)
-   (display "Enter elements in form (type val [val2]), to stop print ()")
+   (display "Перечислите элементы в виде (тип значение [знач2]), для окончания введите ()")
    (newline)
    (get-next '()))    
 ;;;   get element   
@@ -219,11 +192,11 @@
    (display ": ")
    (let ((s (read)))
       (cond
-         ((not (list? s)) (wrong-read "Must be a list" group))
+         ((not (list? s)) (wrong-read "Ожидается список" group))
 	 ((null? s) (reverse group))
 	 ((string? (car s)) (get-next (get-from-file (car s))))
-	 ((not (member (car s) '(P T R Q M))) (wrong-read "Must begin with P, T, Q, R or M" group))	  
-         ((and (eqv? (car s) 'M) (not (= (length s) 5))) (wrong-read "Matrix must contain 4 elements" group))	 
+	 ((not (member (car s) '(P T R Q M))) (wrong-read "Допустимые типы: P, T, Q, R и M" group))	  
+         ((and (eqv? (car s) 'M) (not (= (length s) 5))) (wrong-read "Матрица должна содержать 4 элемента" group))	 
 	 (else (get-next (cons s group))))))
 ;;;   error input  
 (define (wrong-read msg group)
@@ -238,9 +211,9 @@
    (let loop ((grp '()))
       (let ((s (read p)))
          (cond 
-	    ((eof-object? s) (display "Done") (newline) grp)    ; how to print file name?
-	    ((not (list? s)) ((display s) (display " not a list") (newline))) ;  break all
-	    ((null? s) (display "Done") (newline) grp)
+	    ((eof-object? s) (display "Загружено") (newline) grp)    ; how to print file name?
+	    ((not (list? s)) ((display s) (display " не список") (newline))) ;  break all
+	    ((null? s) (display "Загружено") (newline) grp)
 	    ((string? (car s)) (loop (append (get-from-file (car s)) grp)))
             (else (loop (cons s grp)))))))
 ;;; print result	    
