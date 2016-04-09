@@ -110,39 +110,51 @@
       
 ;;;========== Инфиксная форма выражения =============
 
-;;;   (* a (+ b c)) -> a * (b + c)
-(define (print-expr e)
-   (print-one e #f))
-;;;   print expression
-(define (print-one expr par?)
-   (if par? (display "("))
-   (if (list? expr)
-      (let ((op (car expr)) (e1 (cadr expr)) (e2 (caddr expr))) 
-         (if (list? e1)
-            (print-inside e1 op)            
-            (if (not (and (eqv? op '-) (eqv? e1 0))) ; 0 - a -> -a
-               (print-number e1)))	    
-	 (display op)  
-	 (if (list? e2)
-	    (print-inside e2 op)
-	    (print-number e2)))
-      (print-number expr))        ; if expr - not list
-   (if par? (display ")")))
-;;;  add parenthesis if need   
-(define (print-inside expr op)
-   (case op
-      ((+) (print-one expr #f))
-      ((-) (print-one expr (member (car expr) '(+ -))))
-      ((*) (print-one expr (member (car expr) '(+ -))))
-      ((/) (print-one expr #t))))
-      
-(define (print-number n)
+;;; convert number of symbol to string   
+(define (num->str n)
    (if (number? n)
-      (begin 
-         (if (negative? n) (display "("))
-	 (display n)
-	 (if (negative? n) (display ")")))
-      (display n)))
+      (if (negative? n)
+          (string-append "(" (number->string n) ")")
+	  (number->string n))
+      (symbol->string n)))
+;;;  add parenthesis if need
+(define (str-inside expr op)
+   (case op
+      ((+) (get-str expr #f))
+      ((- *) (get-str expr (memq (car expr) '(+ -))))
+      ((/) (get-str expr #t))))
+;;;  (+ a b) -> "a + b"    
+(define (get-str expr par?)
+   (if (list? expr)
+      (let ((op (car expr)) (e1 (cadr expr)) (e2 (caddr expr)))
+         (string-append 
+            (if par? "(" "")
+            (if (list? e1) (str-inside e1 op)
+                 (if (and (eq? op '-) (eqv? e1 0)) "" (num->str e1)))
+            (num->str op)
+            (if (list? e2) (str-inside e2 op) (num->str e2))
+            (if par? ")" "")))
+      (string-append
+         (if par? "(" "")
+         (num->str expr)
+         (if par? ")" ""))))
+;;;   (* a (+ b c)) ->" a * (b + c)"
+(define (expr->str e)
+   (get-str e #f))
+;;; save to file with given name   
+(define (file-save mat p name)
+   (display (dot-correct name) p)
+   (display " : matrix(\n" p)
+   (display (string-append "[" (expr->str (x00 mat)) ", " (expr->str (x01 mat)) "],\n") p)
+   (display (string-append "[" (expr->str (x10 mat)) ", " (expr->str (x11 mat)) "]\n") p)
+   (display ");" p))
+;;; remove dot at the end of name   
+(define (dot-correct name)
+   (let ((s (memq #\. (reverse (string->list name))))) ; "abc" -> (b c a)
+      (if s (list->string (reverse (cdr s)))
+             name)))
+      
+   
 
 ;;;=============== Список элементов ==================
 ;;; Участки схемы представляются в виде списков:
@@ -195,8 +207,8 @@
          ((not (list? s)) (wrong-read "Ожидается список" group))
 	 ((null? s) (reverse group))
 	 ((string? (car s)) (get-next (get-from-file (car s))))
-	 ((not (member (car s) '(P T R Q M))) (wrong-read "Допустимые типы: P, T, Q, R и M" group))	  
-         ((and (eqv? (car s) 'M) (not (= (length s) 5))) (wrong-read "Матрица должна содержать 4 элемента" group))	 
+	 ((not (memq (car s) '(P T R Q M))) (wrong-read "Допустимые типы: P, T, Q, R и M" group))	  
+         ((and (eq? (car s) 'M) (not (= (length s) 5))) (wrong-read "Матрица должна содержать 4 элемента" group))	 
 	 (else (get-next (cons s group))))))
 ;;;   error input  
 (define (wrong-read msg group)
@@ -219,15 +231,40 @@
 ;;; print result	    
 (define (ABCD-print m)   
    (for-each 
-      (lambda (x y) (display x) (print-expr y) (newline))
+      (lambda (x y) (display x) (display (expr->str y)) (newline))
       '("A = " "B = " "C = " "D = ") m))
+      
+(define (main-dialog)
+   (let* ((ABCD-list (to-matrix-list (get-scheme)))
+	     (ABCD (mat-list-prod (mat-num-prod ABCD-list))))
+      (ABCD-print ABCD)
+      (continue-dialog ABCD)))
+      
+(define (continue-dialog mat)
+   (display ": ")
+   (let ((s (read)))
+      (cond
+         ((eqv? s 'new) (main-dialog))         
+	 ((or (null? s) (eqv? s 'q) (eqv? s 'quit)) (display "Bye\n"))
+	 ((and (list? s) (eq? (car s) 'to) (string? (cadr s)))
+	    (let ((fname (cadr s)))
+	       (call-with-output-file fname
+	          (lambda (i) 
+		     (file-save mat i fname)))
+		(display "Saved\n")
+		(continue-dialog mat)))
+	 (else (continue-dialog mat)))))
+	 
+  
+      
 	
 ;;;============= Программа ==============
 
-(define ABCD-list (to-matrix-list (get-scheme)))
-(define ABCD-temp (mat-num-prod ABCD-list))
-(define ABCD (mat-list-prod ABCD-temp))
-(ABCD-print ABCD)
+;(define ABCD-list (to-matrix-list (get-scheme)))
+;(define ABCD-temp (mat-num-prod ABCD-list))
+;(define ABCD (mat-list-prod ABCD-temp))
+;(ABCD-print ABCD)
+(main-dialog)
 
 
 
