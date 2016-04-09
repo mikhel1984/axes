@@ -119,6 +119,21 @@
       (if (null? l)
          res
 	 (loop (cdr l) (mat-prod res (car l))))))
+	 
+(define (all-number? lst)
+   (let loop ((L lst) (res #t))
+      (if (or (null? L) (not res))
+           res
+	   (loop (cdr L) (number? (car L))))))
+	 
+(define (mat-num-prod lst)
+   (let loop ((L lst) (res '(1 0 0 1)) (acc '()))
+      (cond 
+         ((null? L) (reverse (cons res acc)))
+	 ((all-number? (car L)) 
+	    (loop (cdr L) (mat-prod res (car L)) acc))
+	 (else 
+	    (loop (cdr L) '(1 0 0 1) (cons (car L) (cons res acc)))))))
       
 ;;;========== Инфиксная форма выражения =============
 
@@ -237,7 +252,8 @@
 ;;;============= Программа ==============
 
 (define ABCD-list (to-matrix-list (get-scheme)))
-(define ABCD (mat-list-prod ABCD-list))
+(define ABCD-temp (mat-num-prod ABCD-list))
+(define ABCD (mat-list-prod ABCD-temp))
 (ABCD-print ABCD)
 
 
