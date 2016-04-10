@@ -92,7 +92,7 @@
       (if (or (null? L) (not res))
            res
 	   (loop (cdr L) (number? (car L))))))
-;;;   reduced list where number matrixes were multiplied	 
+;;;   reduced list with number matrixes multiplication
 (define (mat-num-prod lst)
    (let loop ((L lst) (res '(1 0 0 1)) (acc '()))
       (cond 
@@ -146,7 +146,7 @@
 ;;;---------------------------------------------------
 
 ;;; convert list of elements to list of matrix    
-(define (to-matrix-list grp)       
+(define (to-matrix-list grp)      
    (let loop ((prev '()) (curr grp) (res '()))
       (if (null? curr)
           res
@@ -187,7 +187,7 @@
       (cond
          ((not (list? s)) (wrong-read "Ожидается список" group))
 	 ((null? s) (reverse group))
-	 ((string? (car s)) (get-next (get-from-file (car s))))
+	 ((string? (car s)) (get-next (append (get-from-file (car s)) group)))
 	 ((not (memq (car s) '(P T R Q M))) (wrong-read "Допустимые типы: P, T, Q, R и M" group))	  
          ((and (eq? (car s) 'M) (not (= (length s) 5))) (wrong-read "Матрица должна содержать 4 элемента" group))	 
 	 (else (get-next (cons s group))))))
@@ -206,7 +206,7 @@
    (let loop ((grp '()))
       (let ((s (read p)))
          (cond 
-	    ((eof-object? s) grp)    ; how to print file name?
+	    ((eof-object? s) grp)
 	    ((not (list? s)) ((display s) (display " не список\n"))) ;  break all
 	    ((null? s) grp)
 	    ((string? (car s)) (loop (append (get-from-file (car s)) grp)))
@@ -231,7 +231,7 @@
 ;;;   initial function for Axes      
 (define (main-dialog)
    (let* ((ABCD-list (to-matrix-list (get-scheme)))
-	     (ABCD (mat-list-prod (mat-num-prod ABCD-list))))
+	     (ABCD (mat-list-prod (mat-num-prod ABCD-list))))      
       (ABCD-print ABCD)
       (continue-dialog ABCD)))
 ;;;   additional options      
