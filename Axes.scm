@@ -9,41 +9,8 @@
 ;;; пользователем. Данные могут быть представлены как в 
 ;;; численном виде, так и символьно.
 
-;;;=========  Математические операции =========
+(load "Axes-math.scm")
 
-;;;    a + b
-(define (f+ a b)
-   (cond 
-      ((and (number? a) (number? b)) (+ a b))      
-      ((and (number? a) (= a 0)) b)
-      ((and (number? b) (= b 0)) a)
-      (else (list '+ a b)))) 
-;;;   a* b	       
-(define (f* a b)
-   (cond 
-      ((and (number? a) (number? b)) (* a b))      	
-      ((and (number? a) (= a 1)) b)
-      ((and (number? a) (= a 0)) 0)
-      ((and (number? b) (= b 1)) a)
-      ((and (number? b) (= b 0)) 0)      
-      (else (list '* a b))))
-;;;   a - b	       
-(define (f- a b)
-   (cond 
-      ((and (number? a) (number? b)) (- a b))      
-      ((and (number? b) (= b 0)) a)      
-      ((equal? a b) 0)
-      (else (list '- a b))))
-;;;   a / b	       
-(define (f/ a b)
-   (cond 
-      ((eqv? b 0) 'ZERO_DIVIDE)
-      ((and (number? a) (number? b)) (/ a b))      
-      ((and (number? a) (= a 0)) 0)
-      ((and (number? b) (= b 1)) a)      
-      ((equal? a b) 1)
-      (else (list '/ a b))))
-      
 ;;;==================== Матрицы =====================
 ;;; Матрицы 2x2, записываются по строкам:
 ;;; (a b c d) -> (a b
@@ -58,6 +25,7 @@
 (define-macro (x10 m) `(caddr ,m))
 ;;;   (a b c d) -> d    
 (define-macro (x11 m) `(cadddr ,m))
+
 ;;;   (a b c d) -> (a b)  
 (define (row0 m)
    (list (x00 m) (x01 m)))
@@ -70,6 +38,7 @@
 ;;;   (a b c d) -> (b d)    
 (define (col1 m)
    (list (x01 m) (x11 m)))
+   
 ;;;   (a1 a2) * (b1 b2)    
 (define (vec-prod v1 v2)
    (apply f+ (map f* v1 v2)))
@@ -80,19 +49,22 @@
       (vec-prod (row0 m1) (col1 m2))
       (vec-prod (row1 m1) (col0 m2))
       (vec-prod (row1 m1) (col1 m2))))
-;;;   product of matrices in list      
+      
+;;;   Произведение всех матриц из списка      
 (define (mat-list-prod lst)   
    (let loop ((l lst) (res '(1 0 0 1)))
       (if (null? l)
          res
 	 (loop (cdr l) (mat-prod res (car l))))))
-;;;   check if all elements are numbers (for nonempy list)	 
+	 
+;;;   Все элементы списка - числа?	 
 (define (all-number? lst)
    (let loop ((L lst) (res #t))
       (if (or (null? L) (not res))
            res
 	   (loop (cdr L) (number? (car L))))))
-;;;   reduced list with number matrixes multiplication
+	   
+;;;   Умножение только числовых матриц
 (define (mat-num-prod lst)
    (let loop ((L lst) (res '(1 0 0 1)) (acc '()))
       (cond 
@@ -104,19 +76,21 @@
       
 ;;;========== Инфиксная форма выражения =============
 
-;;; convert number or symbol to string   
+;;;  Преобразование числа или символа в строку  
 (define (num->str n)
    (if (number? n)
       (if (negative? n)
           (string-append "(" (number->string n) ")")
 	  (number->string n))
       (symbol->string n)))
-;;;  add parenthesis if need
+      
+;;;  Добавление скобок, если необходимо
 (define (str-inside expr op)
    (case op
       ((+) (get-str expr #f))
       ((- *) (get-str expr (memq (car expr) '(+ -))))
       ((/) (get-str expr #t))))
+      
 ;;;  (+ a b) -> "a + b"    
 (define (get-str expr par?)
    (if (list? expr)
@@ -132,6 +106,7 @@
          (if par? "(" "")
          (num->str expr)
          (if par? ")" ""))))
+	 
 ;;;   (* a (+ b c)) ->" a * (b + c)"
 (define (expr->str e)
    (get-str e #f))
@@ -145,7 +120,7 @@
 ;;; (M m00 m01 m10 m11) - произвольная матрица 2x2
 ;;;---------------------------------------------------
 
-;;; convert list of elements to list of matrix    
+;;;  Преобразование списка элементов в список матриц    
 (define (to-matrix-list grp)      
    (let loop ((prev '()) (curr grp) (res '()))
       (if (null? curr)
@@ -155,7 +130,8 @@
 	        (cons
 		   (get-m prev head (if (null? tail) '() (car tail)))
 		   res))))))
-;;; convert element to matrix	
+		   
+;;;  Построение матрицы для элемента	
 (define (get-m p c n)
    (case (car c)
       ((T) (list 1 (f/ (cadr c) (get-n c)) 0 1)) 
@@ -164,7 +140,8 @@
       ((Q) (list 1 0 (f/ (f* 2 (get-n p)) (cadr c)) 1))
       ((M) (cdr c))
       (else '(1 0 0 1))))
-;;;   get value of refractive index	
+      
+;;;  Извлечение показателя преломления	
 (define (get-n lst)
    (cond 
       ((null? lst) 1)
@@ -176,11 +153,12 @@
       
 ;;;=============== Диалог ===============
 
-;;;   dialog, expect (T ...) or (R ...) or (P ...) or (Q ...) or (M ...), () to stop   
+;;;   Функция диалога
 (define (get-scheme)
    (display "Перечислите элементы в виде (тип значение [знач2]), для окончания введите ()\n")
    (get-next '()))    
-;;;   get element   
+   
+;;;   Считывание элемента
 (define (get-next group)
    (display ": ")
    (let ((s (read)))
@@ -191,17 +169,20 @@
 	 ((not (memq (car s) '(P T R Q M))) (wrong-read "Допустимые типы: P, T, Q, R и M" group))	  
          ((and (eq? (car s) 'M) (not (= (length s) 5))) (wrong-read "Матрица должна содержать 4 элемента" group))	 
 	 (else (get-next (cons s group))))))
-;;;   error input  
+	 
+;;;   Обработка ошибки ввода  
 (define (wrong-read msg group)
    (display msg)
    (newline)
    (get-next group))
-;;;   read elements from file   
+   
+;;;   Считывание элементов из файла  
 (define (get-from-file f)
    (let ((res (call-with-input-file f get-from-port)))
       (display f) (display " - загружен\n")
       res))
-;;;   working with file   
+      
+;;;   Работа с файлом  
 (define (get-from-port p)
    (let loop ((grp '()))
       (let ((s (read p)))
@@ -211,37 +192,48 @@
 	    ((null? s) grp)
 	    ((string? (car s)) (loop (append (get-from-file (car s)) grp)))
             (else (loop (cons s grp)))))))
-;;; print result to display	    
+	    
+;;;  Вывод результата на экран	    
 (define (ABCD-print m)   
    (for-each 
       (lambda (x y) (display x) (display (expr->str y)) (newline))
       '("A = " "B = " "C = " "D = ") m))
-;;;   save to file with given name   
+      
+;;;   Сохранение результата в файл (в формате Maxima) 
 (define (file-save mat p name)
    (display (dot-correct name) p)
    (display " : matrix(\n" p)
    (display (string-append "[" (expr->str (x00 mat)) ", " (expr->str (x01 mat)) "],\n") p)
    (display (string-append "[" (expr->str (x10 mat)) ", " (expr->str (x11 mat)) "]\n") p)
    (display ");" p))
+   
 ;;;   "abc.txt" -> "abc" 
 (define (dot-correct name)
    (let ((s (memq #\. (reverse (string->list name))))) ; "abc" -> (b c a)
       (if s (list->string (reverse (cdr s)))
              name)))  
-;;;   initial function for Axes      
+	     
+;;;   Функция запуска программы Axes      
 (define (main-dialog)
    (let* ((ABCD-list (to-matrix-list (get-scheme)))
-	     (ABCD (mat-list-prod (mat-num-prod ABCD-list))))      
+	     (ABCD-init (mat-list-prod (mat-num-prod ABCD-list)))
+             (ABCD (map simplify ABCD-init)))
+      ;(ABCD-print ABCD-init)	     
       (ABCD-print ABCD)
       (continue-dialog ABCD)))
-;;;   additional options      
+      
+;;;   Дополнительные возможности    
 (define (continue-dialog mat)
-   (display "Команды: new - новый расчёт, (to имя) - сохранение в файл, q(uit) - выход\n")
+   (display "Команды: new - новый расчёт, (to имя) - сохранение в файл, q(uit) - выход,\n")
+   (display "((переменная1 значение1) (переменная2 значение2) ...) - пересчёт\n")
    (display "? ")
    (let ((s (read)))
       (cond
-         ((eqv? s 'new) (main-dialog))         
+         ;; создание новой схемы
+         ((eqv? s 'new) (main-dialog))    
+         ;; завершение	 
 	 ((or (null? s) (eqv? s 'q) (eqv? s 'quit)) (display "Пока!\n"))
+	 ;; сохранение в файл
 	 ((and (list? s) (eq? (car s) 'to) (string? (cadr s)))
 	    (let ((fname (cadr s)))
 	       (call-with-output-file fname
@@ -249,9 +241,17 @@
 		     (file-save mat i fname)))
 		(display "Сохранено\n")
 		(continue-dialog mat)))
+	 ;; расчёт для новых данных
+	 ((and (list? s) (list? (car s)))
+	    (let ((ABCD-tmp (map 
+	                (lambda (i)  (simplify (eval-for i s))) 
+		        mat)))
+	       (ABCD-print ABCD-tmp)
+	       (continue-dialog mat)))
+         ;; продолжение диалога	       
 	 (else (continue-dialog mat)))))   
 	
-;;;============= Запуск ==============
+;;;============= Поехали! ==============
 
 (main-dialog)
 
