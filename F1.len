@@ -1,0 +1,4 @@
+; positive lens
+(R 100)
+(T 4 1.5)
+(R -80)

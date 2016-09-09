@@ -1,0 +1,9 @@
+; Run "Axes.scm" (in Guile), then enter
+; ("example.txt")
+; ()
+; or write this text after ":"
+(T 40)
+("F1.len")
+(T t)      ; distance between lens as parameter
+("F2.len")
+(T 20)
