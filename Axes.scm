@@ -1,18 +1,18 @@
 ;;; S.Mikhel, 2016 - camis.dat@gmail.com
-;;; Проверено в Guile
+;;; Tested in Guile
 
-;;;=============== Описание ===================
+;;;=============== Description ===================
 
-;;; Данная программа предназначена для вычисления элементов
-;;; матрицы преобразования от предмета к изображению (ABCD).
-;;; Матрица формируется на основе списка элементов, задаваемых 
-;;; пользователем. Данные могут быть представлены как в 
-;;; численном виде, так и символьно.
+;;; This program can be used for calculation the matrix of 
+;;; transformation from object to image (ABCD).
+;;; Matrix is based on list of elements, which are declared
+;;; by user. Data can be represented both in numerical and 
+;;; symbolical form.
 
 (load "Axes-math.scm")
 
-;;;==================== Матрицы =====================
-;;; Матрицы 2x2, записываются по строкам:
+;;;==================== Matrix =====================
+;;; Matrix 2x2 is represented by rows
 ;;; (a b c d) -> (a b
 ;;;               c d)
 ;;;--------------------------------------------------
@@ -50,21 +50,21 @@
       (vec-prod (row1 m1) (col0 m2))
       (vec-prod (row1 m1) (col1 m2))))
       
-;;;   Произведение всех матриц из списка      
+;;;   Matrix to list multiplication
 (define (mat-list-prod lst)   
    (let loop ((l lst) (res '(1 0 0 1)))
       (if (null? l)
          res
 	 (loop (cdr l) (mat-prod res (car l))))))
 	 
-;;;   Все элементы списка - числа?	 
+;;;   Check if all elements are numbers
 (define (all-number? lst)
    (let loop ((L lst) (res #t))
       (if (or (null? L) (not res))
            res
 	   (loop (cdr L) (number? (car L))))))
 	   
-;;;   Умножение только числовых матриц
+;;;   Multiplication only for numerical matrices
 (define (mat-num-prod lst)
    (let loop ((L lst) (res '(1 0 0 1)) (acc '()))
       (cond 
@@ -74,9 +74,9 @@
 	 (else 
 	    (loop (cdr L) '(1 0 0 1) (cons (car L) (cons res acc)))))))
       
-;;;========== Инфиксная форма выражения =============
+;;;========== Infix form =============
 
-;;;  Преобразование числа или символа в строку  
+;;;  Convert number to string
 (define (num->str n)
    (if (number? n)
       (if (negative? n)
@@ -84,7 +84,7 @@
 	  (number->string n))
       (symbol->string n)))
       
-;;;  Добавление скобок, если необходимо
+;;;  Additional brackets
 (define (str-inside expr op)
    (case op
       ((+) (get-str expr #f))
@@ -111,16 +111,16 @@
 (define (expr->str e)
    (get-str e #f))
 
-;;;=============== Список элементов ==================
-;;; Участки схемы представляются в виде списков:
-;;; (T len [n]) - оптический путь длиной len (с показателем преломления n)
-;;; (R rad) - радиус кривизны поверхности rad
-;;; (P f) - тонкая линза с фокусным расстоянием f
-;;; (Q rad) - отражающая поверхность с радиусов кривизны rad
-;;; (M m00 m01 m10 m11) - произвольная матрица 2x2
+;;;=============== List of elements ==================
+;;; Parts of optical path should be represented as lists:
+;;; (T len [n]) - optical path with length len (and refractive index n)
+;;; (R rad) - radius of surface curvature rad
+;;; (P f) - thin lens with focus f
+;;; (Q rad) - reflecting surface with radius rad
+;;; (M m00 m01 m10 m11) - arbitrary matrix 2x2
 ;;;---------------------------------------------------
 
-;;;  Преобразование списка элементов в список матриц    
+;;;  Transform list of elements into matrix
 (define (to-matrix-list grp)      
    (let loop ((prev '()) (curr grp) (res '()))
       (if (null? curr)
@@ -131,7 +131,7 @@
 		   (get-m prev head (if (null? tail) '() (car tail)))
 		   res))))))
 		   
-;;;  Построение матрицы для элемента	
+;;;  Create matrix for element
 (define (get-m p c n)
    (case (car c)
       ((T) (list 1 (f/ (cadr c) (get-n c)) 0 1)) 
@@ -141,7 +141,7 @@
       ((M) (cdr c))
       (else '(1 0 0 1))))
       
-;;;  Извлечение показателя преломления	
+;;;  Get refractive index
 (define (get-n lst)
    (cond 
       ((null? lst) 1)
@@ -151,55 +151,55 @@
 	     (caddr lst)))
       (else 1)))
       
-;;;=============== Диалог ===============
+;;;=============== Dialog ===============
 
-;;;   Функция диалога
+;;;   Dialog function
 (define (get-scheme)
-   (display "Перечислите элементы в виде (тип значение [знач2]), для окончания введите ()\n")
+   (display "Enumerate elements in form (type value [value2]), print () to finish\n")
    (get-next '()))    
    
-;;;   Считывание элемента
+;;;   Read element
 (define (get-next group)
    (display ": ")
    (let ((s (read)))
       (cond
-         ((not (list? s)) (wrong-read "Ожидается список" group))
+         ((not (list? s)) (wrong-read "List is expected" group))
 	 ((null? s) (reverse group))
 	 ((string? (car s)) (get-next (append (get-from-file (car s)) group)))
-	 ((not (memq (car s) '(P T R Q M))) (wrong-read "Допустимые типы: P, T, Q, R и M" group))	  
-         ((and (eq? (car s) 'M) (not (= (length s) 5))) (wrong-read "Матрица должна содержать 4 элемента" group))	 
+	 ((not (memq (car s) '(P T R Q M))) (wrong-read "Possible types: P, T, Q, R and M" group))	  
+         ((and (eq? (car s) 'M) (not (= (length s) 5))) (wrong-read "Matrix must contain 4 elements" group))	 
 	 (else (get-next (cons s group))))))
 	 
-;;;   Обработка ошибки ввода  
+;;;   Error processing
 (define (wrong-read msg group)
    (display msg)
    (newline)
    (get-next group))
    
-;;;   Считывание элементов из файла  
+;;;   Get element from file
 (define (get-from-file f)
    (let ((res (call-with-input-file f get-from-port)))
-      (display f) (display " - загружен\n")
+      (display f) (display " - loaded\n")
       res))
       
-;;;   Работа с файлом  
+;;;   Working with files
 (define (get-from-port p)
    (let loop ((grp '()))
       (let ((s (read p)))
          (cond 
 	    ((eof-object? s) grp)
-	    ((not (list? s)) ((display s) (display " не список\n"))) ;  break all
+	    ((not (list? s)) ((display s) (display " not a list\n"))) ;  break all
 	    ((null? s) grp)
 	    ((string? (car s)) (loop (append (get-from-file (car s)) grp)))
             (else (loop (cons s grp)))))))
 	    
-;;;  Вывод результата на экран	    
+;;;  Print the result
 (define (ABCD-print m)   
    (for-each 
       (lambda (x y) (display x) (display (expr->str y)) (newline))
       '("A = " "B = " "C = " "D = ") m))
       
-;;;   Сохранение результата в файл (в формате Maxima) 
+;;;   Save as file (for Maxima) 
 (define (file-save mat p name)
    (display (dot-correct name) p)
    (display " : matrix(\n" p)
@@ -213,45 +213,44 @@
       (if s (list->string (reverse (cdr s)))
              name)))  
 	     
-;;;   Функция запуска программы Axes      
+;;;   Run Axes program      
 (define (main-dialog)
    (let* ((ABCD-list (to-matrix-list (get-scheme)))
 	     (ABCD-init (mat-list-prod (mat-num-prod ABCD-list)))
              (ABCD (map simplify ABCD-init)))
-      ;(ABCD-print ABCD-init)	     
       (ABCD-print ABCD)
       (continue-dialog ABCD)))
       
-;;;   Дополнительные возможности    
+;;;  Additional opportunities
 (define (continue-dialog mat)
-   (display "Команды: new - новый расчёт, (to имя) - сохранение в файл, q(uit) - выход,\n")
-   (display "((переменная1 значение1) (переменная2 значение2) ...) - пересчёт\n")
+   (display "Commands: new - new calculation, (to 'name') - save as file, q(uit) - exit,\n")
+   (display "((variable1 value1) (variable2 value2) ...) - recalculation\n")
    (display "? ")
    (let ((s (read)))
       (cond
-         ;; создание новой схемы
+         ;; create new schema
          ((eqv? s 'new) (main-dialog))    
-         ;; завершение	 
-	 ((or (null? s) (eqv? s 'q) (eqv? s 'quit)) (display "Пока!\n"))
-	 ;; сохранение в файл
+         ;; exit
+	 ((or (null? s) (eqv? s 'q) (eqv? s 'quit)) (display "Bye!\n"))
+	 ;; save to file
 	 ((and (list? s) (eq? (car s) 'to) (string? (cadr s)))
 	    (let ((fname (cadr s)))
 	       (call-with-output-file fname
 	          (lambda (i) 
 		     (file-save mat i fname)))
-		(display "Сохранено\n")
+		(display "Saved\n")
 		(continue-dialog mat)))
-	 ;; расчёт для новых данных
+	 ;; calculate for new data
 	 ((and (list? s) (list? (car s)))
 	    (let ((ABCD-tmp (map 
 	                (lambda (i)  (simplify (eval-for i s))) 
 		        mat)))
 	       (ABCD-print ABCD-tmp)
 	       (continue-dialog mat)))
-         ;; продолжение диалога	       
+         ;; continue dialog
 	 (else (continue-dialog mat)))))   
 	
-;;;============= Поехали! ==============
+;;;============= Let's go! ==============
 
 (main-dialog)
 

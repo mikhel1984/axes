@@ -1,6 +1,6 @@
-;;; Работа с математическими выражениями для программы Axes.
+;;; Mathematical evaluations for Axes program.
 
-;;;=========  Математические операции =========
+;;;=========  Main operations =========
 
 ;;;    a + b
 (define (f+ a b)
@@ -38,9 +38,9 @@
       ((equal? a b) 1)
       (else (list '/ a b))))
       
-;;;======== Сравнение математических выражений ========
+;;;======== Comparison of equations ========
 
-;;; основной предикат
+;;; main predicate
 (define (mat-eqv? a b)
    (if (list? a)
       (if (list? b)
@@ -48,7 +48,7 @@
 	  #f)
       (eqv? a b))) 
       
-;;;   выражение1  ??  выражение2	       
+;;;   expr1 ?? expr2 
 (define (expr-eqv? e1 e2)
    (if (eqv? (car e1) (car e2))     
       (if (direct-eqv? (cdr e1) (cdr e2))
@@ -67,19 +67,19 @@
    (and (mat-eqv? (car a) (cadr b))
             (mat-eqv? (car b) (cadr a))))
 	    
-;;;========= Представление переменных =================
+;;;========= Variable representation =================
 
-;;; Для предствления выражения в виде многочлена и приведения
-;;; подобных переменные преобразуются к группе
-;;; (коэффициент переменная),
-;;; например 3*k -> (3 k),
-;;; а сумма записывается как список таких групп, т.п.
+;;; To represent an equation as polynomial and simplify it
+;;; variables are represented as group
+;;; (coefficient variable),
+;;; for example 3*k -> (3 k),
+;;; sum is transformed into a list of such groups
 ;;; 2*a + 3*b -> ((2 a) (3 b))
-;;; Константа (число) записывается в виде (число 1)
+;;; Constant can be written as (constant 1)
 ;;;
 ;;;---------------------------------------------------------------------------------------------
 
-;;; Исключение "групп" с нулевым коэффициентом		  
+;;; Zero coefficient reducing
 (define (grp-reduce lst)
    (let loop ((gr lst) (sum '()))
       (if (null? gr)
@@ -88,7 +88,7 @@
 	    (loop (cdr gr) sum)
 	    (loop (cdr gr) (cons (car gr) sum))))))
 
-;;; Добавление к списку новой "группы"
+;;; Append new group
 (define (grp-add x grp)
    (define (add-one rst i)
       (if (null? rst)
@@ -101,20 +101,20 @@
 	       (else (add-one (cdr rst) (+ i 1)))))))
    (add-one grp 0))
    
-;;; Сложение списков
+;;; Addition
 (define (grp-add-lst grp1 grp2)
    (if (null? grp1)
       grp2
       (grp-add-lst (cdr grp1) (grp-add (car grp1) grp2))))
 
-;;; Умножение "группы" на список
+;;; Multiplication of group and list
 (define (grp-prod x grp)
    (map 
       (lambda (y)
          (list (* (car x) (car y)) (f* (cadr x) (cadr y))))
       grp))
 
-;;; Перемножение списков
+;;; List multiplication
 (define (grp-prod-lst grp1 grp2)
    (let loop ((g grp1) (res '()))
       (if (null? g) 
@@ -124,7 +124,7 @@
 	       (grp-prod (car g) grp2)
 	       (grp-add-lst (grp-prod (car g) grp2) res))))))
 
-;;; Преобразование выражения в список
+;;; Expression to list transformation
 (define (to-grp expr)
    (cond
       ((number? expr) (cons (cons expr '(1)) '()))
@@ -139,27 +139,26 @@
 	                (grp-prod (cons (/ 1 b) '(1)) (to-grp a))
 			(grp-prod (list 1 (f/ 1 b)) (to-grp a)))))))))
 
-;;; Преобразование списка в выражение
+;;; List to expression transformation
 (define (from-grp lst)   
    (let loop ((gr lst) (ans 0))
       (if (null? gr)
          ans	
-	 ;(loop (cdr gr) (f+ ans (f* (caar gr) (cadar gr)))))))
 	 (loop (cdr gr) (grp-sum-simp ans (car gr))))))
 
-;;;  Корректировка знаков
+;;;  Sign correction
 (define (grp-sum-simp sum x)
    (if (negative? (car x))
       (f- sum (f* (- (car x)) (cadr x)))
       (f+ sum (f* (car x) (cadr x)))))
 
-;;; Упрощение выражения
+;;; Simplification
 (define (simplify expr)
    (from-grp (to-grp expr)))
    
-;;;========== Пересчёт выражения ============ 
+;;;========== Recalculation ============ 
 
-;;; Вычисление выражения при новых условиях
+;;; Evaluate expression for new conditions
 (define (eval-for expr condition)
    (cond
       ((number? expr) expr)
@@ -171,11 +170,6 @@
 	    (op (eval-for (cadr expr) condition)
 	          (eval-for (caddr expr) condition))))))
 	    
-   
-	    
-
-
-      
 
 		 
 	    
